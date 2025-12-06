@@ -94,5 +94,3 @@ convert_all.exe -j SchemConvert-1.3.1-all.jar -d ./my_schematics -o ./converted_
 ```
 
 ---
-
-*The README now accurately reflects the current capabilities of SchemConvert, including the new procedural texture generation and optional external textures.*
