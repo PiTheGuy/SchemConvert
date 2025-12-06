@@ -29,21 +29,23 @@ public class NbtUtil {
     public static CompoundTag read(File file) throws IOException {
         DataInputStream in = new DataInputStream(new GZIPInputStream(new FileInputStream(file)));
         byte type = in.readByte();
-        if (type != Tag.TAG_COMPOUND) throw new NbtException("File isn't in NBT format");
+        if (type != Tag.TAG_COMPOUND)
+            throw new NbtException("File isn't in NBT format");
         in.readUTF();
         return (CompoundTag) readByType(type, in);
     }
 
     public static CompoundTag read(DataInputStream in) throws IOException {
         byte type = in.readByte();
-        if (type != Tag.TAG_COMPOUND) throw new NbtException("Not in NBT format");
+        if (type != Tag.TAG_COMPOUND)
+            throw new NbtException("Not in NBT format");
         in.readUTF();
         return (CompoundTag) readByType(type, in);
     }
 
     public static void write(Tag tag, File file) throws IOException {
         try (GZIPOutputStream gzip = new GZIPOutputStream(new FileOutputStream(file));
-             DataOutputStream out = new DataOutputStream(gzip)) {
+                DataOutputStream out = new DataOutputStream(gzip)) {
             out.write(tag.getType());
             out.writeUTF("");
             tag.writeContents(out);
@@ -72,7 +74,8 @@ public class NbtUtil {
                 properties.put(key, new StringTag(value));
             }
             tag.put("Properties", properties);
-        } else tag.put("Name", new StringTag(block));
+        } else
+            tag.put("Name", new StringTag(block));
         return tag;
     }
 
@@ -92,5 +95,43 @@ public class NbtUtil {
             sb.append("]");
         }
         return sb.toString();
+    }
+
+    public static int getInt(Tag tag) {
+        if (tag instanceof IntTag intTag)
+            return intTag.value();
+        if (tag instanceof ShortTag shortTag)
+            return shortTag.value();
+        if (tag instanceof ByteTag byteTag)
+            return byteTag.value();
+        if (tag instanceof DoubleTag doubleTag)
+            return (int) doubleTag.value();
+        if (tag instanceof FloatTag floatTag)
+            return (int) floatTag.value();
+        if (tag instanceof LongTag longTag)
+            return (int) longTag.value();
+        throw new NbtException("Tag " + tag.getClass().getSimpleName() + " is not a number");
+    }
+
+    public static double getDouble(Tag tag) {
+        if (tag instanceof DoubleTag doubleTag)
+            return doubleTag.value();
+        if (tag instanceof FloatTag floatTag)
+            return floatTag.value();
+        if (tag instanceof IntTag intTag)
+            return intTag.value();
+        if (tag instanceof LongTag longTag)
+            return longTag.value();
+        if (tag instanceof ShortTag shortTag)
+            return shortTag.value();
+        if (tag instanceof ByteTag byteTag)
+            return byteTag.value();
+        throw new NbtException("Tag " + tag.getClass().getSimpleName() + " is not a number");
+    }
+
+    public static CompoundTag getCompound(Tag tag) {
+        if (tag instanceof CompoundTag compoundTag)
+            return compoundTag;
+        throw new NbtException("Tag " + tag.getClass().getSimpleName() + " is not a compound tag");
     }
 }

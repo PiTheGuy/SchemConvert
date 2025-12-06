@@ -16,81 +16,88 @@ public class AxiomSchematicFormat implements SchematicFormat {
 
     @Override
     public Schematic read(File file) throws IOException {
-        DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)));
-        if (in.readInt() != MAGIC) throw new SchematicParseException("Incorrect header");
-        int headerTagSize = in.readInt();
-        in.readNBytes(headerTagSize);
-        int thumbnailLength = in.readInt();
-        in.readNBytes(thumbnailLength);
-        int blockDataLength = in.readInt();
-        byte[] blockData = in.readNBytes(blockDataLength);
-        DataInputStream blockDataStream = new DataInputStream(new GZIPInputStream(new ByteArrayInputStream(blockData)));
-        CompoundTag blockDataTag = NbtUtil.read(blockDataStream);
-        blockDataStream.close();
-        in.close();
-        ListTag blockRegions = blockDataTag.getList("BlockRegion");
-        int minX = Integer.MAX_VALUE;
-        int minY = Integer.MAX_VALUE;
-        int minZ = Integer.MAX_VALUE;
-        int maxX = Integer.MIN_VALUE;
-        int maxY = Integer.MIN_VALUE;
-        int maxZ = Integer.MIN_VALUE;
-        for (Tag tag : blockRegions) {
-            CompoundTag region = (CompoundTag) tag;
-            minX = Math.min(minX, region.getInt("X"));
-            minY = Math.min(minY, region.getInt("Y"));
-            minZ = Math.min(minZ, region.getInt("Z"));
-            maxX = Math.max(maxX, region.getInt("X"));
-            maxY = Math.max(maxY, region.getInt("Y"));
-            maxZ = Math.max(maxZ, region.getInt("Z"));
-        }
-        int[] size = {(maxX - minX + 1) * 16, (maxY - minY + 1) * 16, (maxZ - minZ + 1) * 16};
-        int dataVersion = blockDataTag.contains("DataVersion", Tag.TAG_INT) ? blockDataTag.getInt("DataVersion") : -1;
-        Schematic.Builder builder = new Schematic.Builder(file, dataVersion, size);
-        for (Tag tag : blockRegions) {
-            CompoundTag region = (CompoundTag) tag;
-            CompoundTag blockStatesTag = region.getCompound("BlockStates");
-            ListTag paletteTag = blockStatesTag.getList("palette");
-            String[] palette = new String[paletteTag.size()];
-            for (int i = 0; i < palette.length; i++)
-                palette[i] = NbtUtil.convertToBlockString((CompoundTag) paletteTag.get(i));
-            long[] data = palette.length == 1 ? new long[256] : blockStatesTag.getLongArray("data");
-            int regionX = region.getInt("X") - minX;
-            int regionY = region.getInt("Y") - minY;
-            int regionZ = region.getInt("Z") - minZ;
-            int[] blockStateData = new int[4096];
-            int bitsPerValue = Math.max(4, Integer.SIZE - Integer.numberOfLeadingZeros(palette.length - 1));
-            int valuesPerLong = Long.SIZE / bitsPerValue;
-            int index = 0;
-            int mask = (1 << bitsPerValue) - 1;
-            for (long num : data) {
-                for (int i = 0; i < valuesPerLong && index < 4096; i++) {
-                    blockStateData[index++] = (int) (num & mask);
-                    num >>>= bitsPerValue;
-                }
-            }
+        try (DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
+            if (in.readInt() != MAGIC)
+                throw new SchematicParseException("Incorrect header");
+            int headerTagSize = in.readInt();
+            in.readNBytes(headerTagSize);
+            int thumbnailLength = in.readInt();
+            byte[] thumbnail = in.readNBytes(thumbnailLength);
+            int blockDataLength = in.readInt();
+            byte[] blockData = in.readNBytes(blockDataLength);
+            DataInputStream blockDataStream = new DataInputStream(
+                    new GZIPInputStream(new ByteArrayInputStream(blockData)));
+            CompoundTag blockDataTag = NbtUtil.read(blockDataStream);
+            blockDataStream.close();
 
-            int i = 0;
-            for (int y = 0; y < 16; y++) {
-                for (int z = 0; z < 16; z++) {
-                    for (int x = 0; x < 16; x++) {
-                        builder.setBlockAt(regionX * 16 + x, regionY * 16 + y, regionZ * 16 + z, palette[blockStateData[i++]]);
+            ListTag blockRegions = blockDataTag.getList("BlockRegion");
+            int minX = Integer.MAX_VALUE;
+            int minY = Integer.MAX_VALUE;
+            int minZ = Integer.MAX_VALUE;
+            int maxX = Integer.MIN_VALUE;
+            int maxY = Integer.MIN_VALUE;
+            int maxZ = Integer.MIN_VALUE;
+            for (Tag tag : blockRegions) {
+                CompoundTag region = (CompoundTag) tag;
+                minX = Math.min(minX, region.getInt("X"));
+                minY = Math.min(minY, region.getInt("Y"));
+                minZ = Math.min(minZ, region.getInt("Z"));
+                maxX = Math.max(maxX, region.getInt("X"));
+                maxY = Math.max(maxY, region.getInt("Y"));
+                maxZ = Math.max(maxZ, region.getInt("Z"));
+            }
+            int[] size = { (maxX - minX + 1) * 16, (maxY - minY + 1) * 16, (maxZ - minZ + 1) * 16 };
+            int dataVersion = blockDataTag.contains("DataVersion", Tag.TAG_INT) ? blockDataTag.getInt("DataVersion")
+                    : -1;
+            Schematic.Builder builder = new Schematic.Builder(file, dataVersion, size).setThumbnail(thumbnail);
+            for (Tag tag : blockRegions) {
+                CompoundTag region = (CompoundTag) tag;
+                CompoundTag blockStatesTag = region.getCompound("BlockStates");
+                ListTag paletteTag = blockStatesTag.getList("palette");
+                String[] palette = new String[paletteTag.size()];
+                for (int i = 0; i < palette.length; i++)
+                    palette[i] = NbtUtil.convertToBlockString((CompoundTag) paletteTag.get(i));
+                long[] data = palette.length == 1 ? new long[256] : blockStatesTag.getLongArray("data");
+                int regionX = region.getInt("X") - minX;
+                int regionY = region.getInt("Y") - minY;
+                int regionZ = region.getInt("Z") - minZ;
+                int[] blockStateData = new int[4096];
+                int bitsPerValue = Math.max(4, Integer.SIZE - Integer.numberOfLeadingZeros(palette.length - 1));
+                int valuesPerLong = Long.SIZE / bitsPerValue;
+                int index = 0;
+                int mask = (1 << bitsPerValue) - 1;
+                for (long num : data) {
+                    for (int i = 0; i < valuesPerLong && index < 4096; i++) {
+                        blockStateData[index++] = (int) (num & mask);
+                        num >>>= bitsPerValue;
+                    }
+                }
+
+                int i = 0;
+                for (int y = 0; y < 16; y++) {
+                    for (int z = 0; z < 16; z++) {
+                        for (int x = 0; x < 16; x++) {
+                            builder.setBlockAt(regionX * 16 + x, regionY * 16 + y, regionZ * 16 + z,
+                                    palette[blockStateData[i++]]);
+                        }
                     }
                 }
             }
-        }
-        if (blockDataTag.contains("BlockEntities", Tag.TAG_LIST)) {
-            ListTag blockEntities = blockDataTag.getList("BlockEntities");
-            for (Tag tag : blockEntities) {
-                CompoundTag blockEntity = (CompoundTag) tag;
-                if (blockEntity.contains("X", Tag.TAG_INT))
-                    builder.addBlockEntity(blockEntity.getInt("X"), blockEntity.getInt("Y"), blockEntity.getInt("Z"), blockEntity);
-                else
-                    builder.addBlockEntity(blockEntity.getInt("x"), blockEntity.getInt("y"), blockEntity.getInt("z"), blockEntity);
+            if (blockDataTag.contains("BlockEntities", Tag.TAG_LIST)) {
+                ListTag blockEntities = blockDataTag.getList("BlockEntities");
+                for (Tag tag : blockEntities) {
+                    CompoundTag blockEntity = (CompoundTag) tag;
+                    if (blockEntity.contains("X", Tag.TAG_INT))
+                        builder.addBlockEntity(blockEntity.getInt("X"), blockEntity.getInt("Y"),
+                                blockEntity.getInt("Z"), blockEntity);
+                    else
+                        builder.addBlockEntity(blockEntity.getInt("x"), blockEntity.getInt("y"),
+                                blockEntity.getInt("z"), blockEntity);
 
+                }
             }
+            return builder.trim().build();
         }
-        return builder.trim().build();
     }
 
     @Override
@@ -98,7 +105,7 @@ public class AxiomSchematicFormat implements SchematicFormat {
         DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
         out.writeInt(MAGIC);
         writeHeader(out, schematic);
-        writeThumbnail(out);
+        writeThumbnail(out, schematic);
         writeBlockData(out, schematic);
         out.close();
     }
@@ -120,11 +127,17 @@ public class AxiomSchematicFormat implements SchematicFormat {
         out.write(stream.toByteArray());
     }
 
-    private void writeThumbnail(DataOutputStream out) throws IOException {
-        try (InputStream stream = AxiomSchematicFormat.class.getResourceAsStream("/icon.png")) {
-            if (stream == null) throw new IOException("Icon not found");
-            out.writeInt(stream.available());
-            out.write(stream.readAllBytes());
+    private void writeThumbnail(DataOutputStream out, Schematic schematic) throws IOException {
+        if (schematic.getThumbnail() != null && schematic.getThumbnail().length > 0) {
+            out.writeInt(schematic.getThumbnail().length);
+            out.write(schematic.getThumbnail());
+        } else {
+            try (InputStream stream = AxiomSchematicFormat.class.getResourceAsStream("/icon.png")) {
+                if (stream == null)
+                    throw new IOException("Icon not found");
+                out.writeInt(stream.available());
+                out.write(stream.readAllBytes());
+            }
         }
     }
 
@@ -132,7 +145,7 @@ public class AxiomSchematicFormat implements SchematicFormat {
         CompoundTag blockData = new CompoundTag();
         ListTag blockRegions = new ListTag(Tag.TAG_COMPOUND);
         int[] size = schematic.getSize();
-        int[] regionSize = new int[]{
+        int[] regionSize = new int[] {
                 (int) Math.ceil(size[0] / 16.0),
                 (int) Math.ceil(size[1] / 16.0),
                 (int) Math.ceil(size[2] / 16.0),
@@ -155,12 +168,14 @@ public class AxiomSchematicFormat implements SchematicFormat {
                                 String block;
                                 try {
                                     block = schematic.getBlock(regionX * 16 + dx, regionY * 16 + dy, regionZ * 16 + dz);
-                                    if (block == null) block = "minecraft:structure_void";
+                                    if (block == null)
+                                        block = "minecraft:structure_void";
                                     if (block.startsWith("minecraft:oak_log")) {
                                         new Object();
                                     }
                                 } catch (IndexOutOfBoundsException e) {
-                                    if (!palette.contains("minecraft:structure_void")) palette.add("minecraft:structure_void");
+                                    if (!palette.contains("minecraft:structure_void"))
+                                        palette.add("minecraft:structure_void");
                                     block = "minecraft:structure_void";
                                 }
                                 blockStateData[index++] = palette.indexOf(block);

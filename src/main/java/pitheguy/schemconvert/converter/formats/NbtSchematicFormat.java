@@ -12,20 +12,26 @@ public class NbtSchematicFormat implements SchematicFormat {
     @Override
     public Schematic read(File file) throws IOException {
         CompoundTag tag = NbtUtil.read(file);
+        if (!tag.contains("size", Tag.TAG_LIST)) {
+            throw new ConversionException(
+                    "Invalid NBT Schematic format. Missing 'size' tag. Found keys: " + tag.keySet());
+        }
         ListTag sizeTag = tag.getList("size");
         int[] size = new int[3];
-        for (int i = 0; i < 3; i++) size[i] = ((IntTag) sizeTag.get(i)).value();
+        for (int i = 0; i < 3; i++)
+            size[i] = NbtUtil.getInt(sizeTag.get(i));
         ListTag paletteTag = tag.getList("palette");
         String[] palette = new String[paletteTag.size()];
         for (int i = 0; i < paletteTag.size(); i++)
-            palette[i] = NbtUtil.convertToBlockString((CompoundTag) paletteTag.get(i));
+            palette[i] = NbtUtil.convertToBlockString(NbtUtil.getCompound(paletteTag.get(i)));
         Schematic.Builder builder = new Schematic.Builder(file, tag.getInt("DataVersion"), size[0], size[1], size[2]);
         ListTag blocksTag = tag.getList("blocks");
         for (Tag value : blocksTag) {
             CompoundTag entry = (CompoundTag) value;
             ListTag posTag = entry.getList("pos");
             int[] pos = new int[3];
-            for (int i = 0; i < 3; i++) pos[i] = ((IntTag) posTag.get(i)).value();
+            for (int i = 0; i < 3; i++)
+                pos[i] = NbtUtil.getInt(posTag.get(i));
             int state = entry.getInt("state");
             builder.setBlockAt(pos[0], pos[1], pos[2], palette[state]);
             if (entry.contains("nbt", Tag.TAG_COMPOUND))
@@ -36,7 +42,8 @@ public class NbtSchematicFormat implements SchematicFormat {
             CompoundTag entityTag = (CompoundTag) value;
             ListTag posTag = entityTag.getList("pos");
             double[] pos = new double[3];
-            for (int i = 0; i < 3; i++) pos[i] = ((DoubleTag) posTag.get(i)).value();
+            for (int i = 0; i < 3; i++)
+                pos[i] = NbtUtil.getDouble(posTag.get(i));
             CompoundTag nbt = entityTag.getCompound("nbt");
             builder.addEntity(nbt.getString("id"), pos[0], pos[1], pos[2], nbt);
         }
@@ -47,24 +54,30 @@ public class NbtSchematicFormat implements SchematicFormat {
     public void write(File file, Schematic schematic) throws IOException {
         int[] size = schematic.getSize();
         if (size[0] > 48 || size[1] > 48 || size[2] > 48)
-            throw new ConversionException("The NBT schematic format only supports schematics of up to 48x48x48 blocks.");
+            throw new ConversionException(
+                    "The NBT schematic format only supports schematics of up to 48x48x48 blocks.");
         CompoundTag tag = new CompoundTag();
         ListTag sizeTag = new ListTag(Tag.TAG_INT);
-        for (int i : size) sizeTag.add(new IntTag(i));
+        for (int i : size)
+            sizeTag.add(new IntTag(i));
         ListTag paletteTag = new ListTag(Tag.TAG_COMPOUND);
-        for (String block : schematic.getPalette()) paletteTag.add(NbtUtil.convertFromBlockString(block));
+        for (String block : schematic.getPalette())
+            paletteTag.add(NbtUtil.convertFromBlockString(block));
         ListTag blocksTag = new ListTag(Tag.TAG_COMPOUND);
         for (int x = 0; x < size[0]; x++) {
             for (int y = 0; y < size[1]; y++) {
                 for (int z = 0; z < size[2]; z++) {
                     int state = schematic.getPaletteBlock(x, y, z);
-                    if (state == -1) continue;
+                    if (state == -1)
+                        continue;
                     ListTag posTag = new ListTag(Tag.TAG_INT);
-                    for (int i : new int[]{x, y, z}) posTag.add(new IntTag(i));
+                    for (int i : new int[] { x, y, z })
+                        posTag.add(new IntTag(i));
                     CompoundTag entry = new CompoundTag();
                     entry.put("pos", posTag);
                     entry.put("state", new IntTag(state));
-                    if (schematic.hasBlockEntityAt(x, y, z)) entry.put("nbt", schematic.getBlockEntityAt(x, y, z));
+                    if (schematic.hasBlockEntityAt(x, y, z))
+                        entry.put("nbt", schematic.getBlockEntityAt(x, y, z));
                     blocksTag.add(entry);
                 }
             }

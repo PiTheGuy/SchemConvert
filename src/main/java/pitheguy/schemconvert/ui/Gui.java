@@ -10,7 +10,6 @@ import javax.swing.filechooser.FileFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -34,7 +33,8 @@ public class Gui extends JFrame {
         formatDropdown = new FormatSelectionDropdown();
         formatDropdown.addActionListener(e -> {
             if (!outputPathField.getText().isEmpty()) {
-                String outputPath = Util.stripExtension(outputPathField.getText()) + formatDropdown.getSelectedFormat().getExtension();
+                String outputPath = Util.stripExtension(outputPathField.getText())
+                        + formatDropdown.getSelectedFormat().getExtension();
                 outputPathField.setText(outputPath);
             }
         });
@@ -61,9 +61,13 @@ public class Gui extends JFrame {
             chooser.setMultiSelectionEnabled(true);
             if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
                 File[] selectedFiles = chooser.getSelectedFiles();
-                inputPathField.setText(selectedFiles.length == 1 ? selectedFiles[0].getAbsolutePath() : "Multiple files selected");
+                inputPathField.setText(
+                        selectedFiles.length == 1 ? selectedFiles[0].getAbsolutePath() : "Multiple files selected");
                 if (outputPathField.getText().isEmpty() || selectedFiles.length > 1) {
-                    String outputPath = selectedFiles.length == 1 ? Util.stripExtension(selectedFiles[0].getAbsolutePath()) + formatDropdown.getSelectedFormat().getExtension() : selectedFiles[0].getParentFile().getAbsolutePath();
+                    String outputPath = selectedFiles.length == 1
+                            ? Util.stripExtension(selectedFiles[0].getAbsolutePath())
+                                    + formatDropdown.getSelectedFormat().getExtension()
+                            : selectedFiles[0].getParentFile().getAbsolutePath();
                     outputPathField.setText(outputPath);
                 }
                 this.selectedFiles = selectedFiles;
@@ -96,7 +100,8 @@ public class Gui extends JFrame {
                 outputPathField.setText(chooser.getSelectedFile().getAbsolutePath());
                 if (selectedFiles != null && selectedFiles.length > 1) {
                     String extension = Util.getExtension(outputPathField.getText());
-                    if (Converter.SCHEMATIC_EXTENSIONS.contains(extension)) formatDropdown.setSelectedFormat(extension);
+                    if (Converter.SCHEMATIC_EXTENSIONS.contains(extension))
+                        formatDropdown.setSelectedFormat(extension);
                 }
             }
             updateButtonState();
@@ -129,11 +134,16 @@ public class Gui extends JFrame {
             SchematicFormat format = formatDropdown.getSelectedFormat();
             new Converter().convert(selectedFiles[0], output, format);
             outputPathField.setText("");
-            JOptionPane.showMessageDialog(this, "Schematic successfully converted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Schematic successfully converted!", "Success",
+                    JOptionPane.INFORMATION_MESSAGE);
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(this, "An error occurred while reading the input file or writing the output file to disk.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "An error occurred while reading the input file or writing the output file to disk.", "Error",
+                    JOptionPane.ERROR_MESSAGE);
         } catch (NbtException | SchematicParseException e) {
-            JOptionPane.showMessageDialog(this, "An error occurred while parsing the schematic. If you're sure this is a valid schematic, please report this!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this,
+                    "An error occurred while parsing the schematic. If you're sure this is a valid schematic, please report this!",
+                    "Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         } catch (ConversionException e) {
             JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -150,7 +160,8 @@ public class Gui extends JFrame {
             List<File> failedFiles = new Converter().convert(selectedFiles, output, format);
             outputPathField.setText("");
             if (failedFiles.isEmpty())
-                JOptionPane.showMessageDialog(this, "Schematics successfully converted!", "Success", JOptionPane.INFORMATION_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Schematics successfully converted!", "Success",
+                        JOptionPane.INFORMATION_MESSAGE);
             else {
                 StringBuilder sb = new StringBuilder();
                 sb.append("The following files failed to convert:\n");
@@ -165,7 +176,6 @@ public class Gui extends JFrame {
         }
     }
 
-
     private JFileChooser createFileChooser() {
         JFileChooser chooser = new JFileChooser(lastPath);
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -173,20 +183,21 @@ public class Gui extends JFrame {
         chooser.setFileFilter(new FileFilter() {
             @Override
             public boolean accept(File f) {
-                return f.isDirectory() || Converter.SCHEMATIC_EXTENSIONS.stream().anyMatch(ext -> f.getName().toLowerCase().endsWith(ext));
+                return f.isDirectory() || Converter.SCHEMATIC_EXTENSIONS.stream()
+                        .anyMatch(ext -> f.getName().toLowerCase().endsWith(ext));
             }
 
             @Override
             public String getDescription() {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Schematic files (");
-                sb.append(Converter.SCHEMATIC_EXTENSIONS.stream().map(ext -> "*" + ext).collect(Collectors.joining("; ")));
+                sb.append(Converter.SCHEMATIC_EXTENSIONS.stream().map(ext -> "*" + ext)
+                        .collect(Collectors.joining("; ")));
                 sb.append(")");
                 return sb.toString();
             }
         });
         return chooser;
     }
-
 
 }

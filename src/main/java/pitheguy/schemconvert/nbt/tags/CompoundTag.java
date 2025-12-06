@@ -25,9 +25,14 @@ public class CompoundTag implements Tag {
         return tags.containsKey(key) && tags.get(key).getType() == type;
     }
 
+    public Tag get(String key) {
+        return tags.get(key);
+    }
+
     public Tag get(String key, byte type) {
         Tag tag = tags.get(key);
-        if (tag == null) throw new NbtException("No such tag: " + key);
+        if (tag == null)
+            throw new NbtException("No such tag: " + key);
         if (tag.getType() != type)
             throw new NbtException("Type mismatch for tag " + key + ": " + tag.getType() + " != " + type);
         return tag;

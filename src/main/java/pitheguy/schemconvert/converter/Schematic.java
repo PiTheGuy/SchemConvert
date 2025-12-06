@@ -15,18 +15,41 @@ public class Schematic {
     private final List<Entity> entities;
     private final int dataVersion;
     private final File sourceFile;
+    private final byte[] thumbnail;
 
-    private Schematic(String[][][] blocks, List<String> palette, Map<Pos, CompoundTag> blockEntities, List<Entity> entities, int dataVersion, File sourceFile) {
+    private Schematic(String[][][] blocks, List<String> palette, Map<Pos, CompoundTag> blockEntities,
+            List<Entity> entities, int dataVersion, File sourceFile, byte[] thumbnail) {
         this.blocks = blocks;
         this.palette = palette;
         this.blockEntities = blockEntities;
         this.entities = entities;
         this.dataVersion = dataVersion;
         this.sourceFile = sourceFile;
+        this.thumbnail = thumbnail;
+    }
+
+    public byte[] getThumbnail() {
+        return thumbnail;
+    }
+
+    public Schematic withThumbnail(byte[] thumbnail) {
+        return new Schematic(blocks, palette, blockEntities, entities, dataVersion, sourceFile, thumbnail);
+    }
+
+    public static Schematic read(File file) throws IOException {
+        String extension = Util.getExtension(file.getName());
+        return switch (extension) {
+            case ".nbt" -> SchematicFormats.NBT.read(file);
+            case ".schem" -> SchematicFormats.SCHEM.read(file);
+            case ".litematic" -> SchematicFormats.LITEMATIC.read(file);
+            case ".bp" -> SchematicFormats.AXIOM.read(file);
+            case ".schematic" -> SchematicFormats.CLASSIC.read(file);
+            default -> throw new IllegalArgumentException("Unsupported format: " + extension);
+        };
     }
 
     public int[] getSize() {
-        return new int[] {blocks.length, blocks[0].length, blocks[0][0].length};
+        return new int[] { blocks.length, blocks[0].length, blocks[0][0].length };
     }
 
     public String getBlock(int x, int y, int z) {
@@ -35,7 +58,8 @@ public class Schematic {
 
     public int getPaletteBlock(int x, int y, int z) {
         String block = getBlock(x, y, z);
-        if (block == null) return -1;
+        if (block == null)
+            return -1;
         return palette.indexOf(block);
     }
 
@@ -55,26 +79,16 @@ public class Schematic {
         return blockEntities.get(new Pos(x, y, z));
     }
 
+    public int getDataVersion() {
+        return dataVersion;
+    }
+
     public List<Entity> getEntities() {
         return entities;
     }
 
     public void write(File file, SchematicFormat format) throws IOException {
         format.write(file, this);
-    }
-
-    public static Schematic read(File file) throws IOException {
-        return switch (Util.getExtension(file.getName())) {
-            case ".nbt" -> SchematicFormats.NBT.read(file);
-            case ".schem" -> SchematicFormats.SCHEM.read(file);
-            case ".litematic" -> SchematicFormats.LITEMATIC.read(file);
-            case ".bp" -> SchematicFormats.AXIOM.read(file);
-            default -> throw new IllegalArgumentException("Unsupported format: " + Util.getExtension(file.getName()));
-        };
-    }
-
-    public int getDataVersion() {
-        return dataVersion;
     }
 
     public File getSourceFile() {
@@ -86,7 +100,8 @@ public class Schematic {
         for (String[][] layer : blocks)
             for (String[] column : layer)
                 for (String block : column)
-                    if (!isEmpty(block)) count++;
+                    if (!isEmpty(block))
+                        count++;
         return count;
     }
 
@@ -130,11 +145,11 @@ public class Schematic {
 
         public Builder trim() {
             int minY = 0;
-            loop:
-            for (int y = 0; y < blocks[0].length; y++) {
+            loop: for (int y = 0; y < blocks[0].length; y++) {
                 for (int x = 0; x < blocks.length; x++)
                     for (int z = 0; z < blocks[0][0].length; z++)
-                        if (!isEmpty(blocks[x][y][z])) break loop;
+                        if (!isEmpty(blocks[x][y][z]))
+                            break loop;
                 minY++;
             }
             String[][][] newBlocks = new String[blocks.length][blocks[0].length - minY][blocks[0][0].length];
@@ -145,8 +160,16 @@ public class Schematic {
             return this;
         }
 
+        private byte[] thumbnail;
+
+        public Builder setThumbnail(byte[] thumbnail) {
+            this.thumbnail = thumbnail;
+            return this;
+        }
+
         public Schematic build() {
-            return new Schematic(blocks, palette.stream().toList(), blockEntities, entities, dataVersion, sourceFile);
+            return new Schematic(blocks, palette.stream().toList(), blockEntities, entities, dataVersion, sourceFile,
+                    thumbnail);
         }
     }
 }
