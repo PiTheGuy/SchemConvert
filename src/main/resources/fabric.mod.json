@@ -1,0 +1,27 @@
+{
+	"schemaVersion": 1,
+	"id": "schemconvert",
+	"version": "${version}",
+	"name": "SchemConvert",
+	"description": "A lightweight tool to convert between different Minecraft schematic formats. In this context it is used by other mods as a library to do just that.",
+	"authors": [
+		"PiTheGuy"
+	],
+	"contact": {
+		"homepage": "https://github.com/PiTheGuy/SchemConvert",
+		"sources": "https://github.com/PiTheGuy/SchemConvert",
+		"issues": "https://github.com/PiTheGuy/SchemConvert/issues"
+	},
+	"license": "GNU GPL3",
+	"icon": "icon.png",
+	"environment": "*",
+	"entrypoints": {
+	},
+	"mixins": [
+	],
+	"depends": {
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
