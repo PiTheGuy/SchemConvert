@@ -9,7 +9,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 public class FormatSelectionDropdown extends JPanel {
-    private JComboBox<String> comboBox;
+    private final JComboBox<String> comboBox;
 
     public FormatSelectionDropdown() {
         setLayout(new BoxLayout(this, BoxLayout.X_AXIS));
@@ -21,13 +21,7 @@ public class FormatSelectionDropdown extends JPanel {
     }
 
     public SchematicFormat getSelectedFormat() {
-        return switch (comboBox.getSelectedItem().toString()) {
-            case ".nbt" -> SchematicFormats.NBT;
-            case ".schem" -> SchematicFormats.SCHEM;
-            case ".litematic" -> SchematicFormats.LITEMATIC;
-            case ".bp" -> SchematicFormats.AXIOM;
-            default -> throw new IllegalStateException("Unexpected value: " + comboBox.getSelectedItem());
-        };
+        return SchematicFormats.formatFromExtension(comboBox.getSelectedItem().toString());
     }
 
     public void addActionListener(ActionListener l) {

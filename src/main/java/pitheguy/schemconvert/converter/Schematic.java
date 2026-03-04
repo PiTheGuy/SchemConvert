@@ -64,13 +64,8 @@ public class Schematic {
     }
 
     public static Schematic read(File file) throws IOException {
-        return switch (Util.getExtension(file.getName())) {
-            case ".nbt" -> SchematicFormats.NBT.read(file);
-            case ".schem" -> SchematicFormats.SCHEM.read(file);
-            case ".litematic" -> SchematicFormats.LITEMATIC.read(file);
-            case ".bp" -> SchematicFormats.AXIOM.read(file);
-            default -> throw new IllegalArgumentException("Unsupported format: " + Util.getExtension(file.getName()));
-        };
+        SchematicFormat format = SchematicFormats.formatFromExtension(Util.getExtension(file.getName()));
+        return format.read(file);
     }
 
     public int getDataVersion() {
