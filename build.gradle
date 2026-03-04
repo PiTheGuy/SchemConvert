@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'pitheguy.schemconvert'
-version = '1.2.5'
+version = '1.2.6'
 
 repositories {
     mavenCentral()
@@ -32,6 +32,14 @@ sourceSets {
 
 application {
     mainClass = 'pitheguy.schemconvert.Main'
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": inputs.properties.version
+    }
 }
 
 jar {

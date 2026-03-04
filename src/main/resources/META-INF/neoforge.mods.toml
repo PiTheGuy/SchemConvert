@@ -1,0 +1,17 @@
+modLoader = "javafml"
+loaderVersion = "[4,)"
+license="GNU GLP3"
+
+[properties]
+"connector:placeholder"=true
+
+[[mods]]
+modId="schemconvert"
+version="1.2.6"
+displayName="SchemConvert"
+authors="PiTheGuy"
+displayURL="https://github.com/PiTheGuy/SchemConvert" #optional
+description='''
+A lightweight tool to convert between different Minecraft schematic formats.
+In this context it is used by other mods as a library to do just that.
+'''
