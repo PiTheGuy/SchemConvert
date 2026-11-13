@@ -79,7 +79,7 @@ public class NbtUtil {
 
         } else {
             tag.put("id", new StringTag(block));   // For >=26.3
-            tag.put("Name", new StringTag(block)); // For <=26.2r
+            tag.put("Name", new StringTag(block)); // For <=26.2
         }
         return tag;
     }
