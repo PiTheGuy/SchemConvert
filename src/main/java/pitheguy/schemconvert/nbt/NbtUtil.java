@@ -62,7 +62,10 @@ public class NbtUtil {
         CompoundTag tag = new CompoundTag();
         if (block.contains("[")) {
             String name = block.substring(0, block.indexOf("["));
-            tag.put("Name", new StringTag(name));
+
+            tag.put("id", new StringTag(name));   // For >=26.3
+            tag.put("Name", new StringTag(name)); // For <=26.2
+
             String propertiesStr = block.substring(block.indexOf("[") + 1, block.indexOf("]"));
             CompoundTag properties = new CompoundTag();
             for (String property : propertiesStr.split(",")) {
@@ -71,16 +74,30 @@ public class NbtUtil {
                 String value = parts[1];
                 properties.put(key, new StringTag(value));
             }
-            tag.put("Properties", properties);
-        } else tag.put("Name", new StringTag(block));
+            tag.put("properties", properties);   // For >=26.3
+            tag.put("Properties", properties);   // For <=26.2
+
+        } else {
+            tag.put("id", new StringTag(block));   // For >=26.3
+            tag.put("Name", new StringTag(block)); // For <=26.2
+        }
         return tag;
     }
 
     public static String convertToBlockString(CompoundTag entry) {
         StringBuilder sb = new StringBuilder();
-        sb.append(entry.getString("Name"));
-        if (entry.contains("Properties", Tag.TAG_COMPOUND)) {
-            CompoundTag properties = entry.getCompound("Properties");
+
+        String name = entry.contains("id", Tag.TAG_STRING) ? entry.getString("id") : entry.getString("Name");
+        sb.append(name);
+
+        CompoundTag properties = null;
+        if (entry.contains("properties", Tag.TAG_COMPOUND)) {
+            properties = entry.getCompound("properties");
+        } else if (entry.contains("Properties", Tag.TAG_COMPOUND)) {
+            properties = entry.getCompound("Properties");
+        }
+
+        if (properties != null) {
             sb.append("[");
             for (String key : properties.keySet()) {
                 sb.append(key);
